@@ -5,7 +5,7 @@ The goal of this lab is to build your first JUnit test case for a BPMN 2.0 proce
 
 ## Short description
 
-* Add the required dependencies to `camunda-bpm-junit5`, `camunda-bpm-assert`, and `assertj-core`
+* Add the required dependencies to `camunda-bpm-junit5`, `camunda-bpm-assert`, `assertj-core`, `camunda-process-test-coverage-junit5-platform-7` and `com.h2database`
 * Prepare your IDE to handle static imports of `camunda-bpm-assert`
 * Add a configuration file for the process engine picked up by the JUnit extension to use an in-memory database
 * Create a JUnit test and start a process instance with variables for a payment that needs customer credit and a credit card. Assert that the process instance is ended right after the start
@@ -49,7 +49,15 @@ The goal of this lab is to build your first JUnit test case for a BPMN 2.0 proce
 		<scope>test</scope>
 	</dependency>
    ```
-3. Open the JUnit test class from the folder `src/test/java` and inspect the content.
+3. Create a new JUnit test class in the folder `src/test/java`.
+4. Add a method to test the happy path of your payment process:
+   ```java
+   @Test
+   public void testHappyPath() {
+
+      // Here goes the testing code
+   }
+   ```
 4. Prepare your IDE to handle the static imports of camunda-bpm-assert and assertJ. In Eclipse go to **Window > Preferences > Java > Editor > Content Assist > Favorites > New Type...** and add the following types: `org.camunda.bpm.engine.test.assertions.ProcessEngineTests` and `org.assertj.core.api.Assertions`. Also, go to **Window > Preferences > Java > Code Style > Organize Imports** and set "Number of static imports needed for .\*" to "0". IntelliJ should pick up the **pom.xml** updates and prompt you to import the changes.
 5. Add the static imports for the Assertions and camunda-bpm-assert support into the import section of the class:
    ```java
@@ -60,22 +68,26 @@ The goal of this lab is to build your first JUnit test case for a BPMN 2.0 proce
    ```java
    @Deployment(resources = "your bpmn file.bpmn")
    ```
-   annotation. The annotation has to be added to the testHappyPath method. Fill your file name into the resources.
-7. Add the ProcessEngineExtension as a JUnit 5 extension to the test class.
+   annotation. The annotation has to be added to the testHappyPath method. It will make sure the BPMN process is deployed to the test engine.
+7. Add the `ProcessEngineCoverageExtension` as a JUnit 5 extension to the test class.
    ```java
    @ExtendWith(ProcessEngineCoverageExtension.class)
    ```
-8. At the start of the test code, we create a Map of type String, Object to use to put in our variables. Then we use the runtimeService() API to start a process instance using the ID (aka ‘key’ as you’ll see in the API call below) of the process template. We also provide the variables HashMap as an argument to the method. Finally, we utilize our assertion library to make sure that our process has indeed completed.
+8. At the start of the test code, we create a `Map`` of the type `<String, Object>` to use to put in our variables. Then we use the `runtimeService()` service to start a process instance using the ID (aka ‘key’ as you’ll see in the API call below) of the process template. We also provide the variables `HashMap`` as an argument to the method. Finally, we utilize our assertion library to make sure that our process has indeed completed.
    ```java
    // Create a HashMap to put in variables for the process instance
    Map<String, Object> variables = new HashMap<String, Object>();
    variables.put("orderTotal", 30.00);
    variables.put("customerCredit", 20.00);
+
    // Start process with Java API and variables
    ProcessInstance processInstance = runtimeService().startProcessInstanceByKey("PaymentProcess", variables);
+
    // Make assertions on the process instance
-   assertThat(processInstance).isEnded().hasPassed("Activity_Charge_Credit_Card");
+   assertThat(processInstance).isEnded().hasPassed(findId("Payment completed"));
    ```
+
+   Adjust the end event name as needed.
 9. The process engine used in the rule in the JUnit test above needs to be configured. To do this, open the file named camunda.cfg.xml under `src/test/resources` and fill it with the content below. This configuration uses an in memory database, emits a full audit (history) trail, uses a configurable expression manager (mocks), and has a placeholder for further extensions (plugins).
     ```xml
     <?xml version="1.0" encoding="UTF-8"?>
@@ -91,26 +103,4 @@ The goal of this lab is to build your first JUnit test case for a BPMN 2.0 proce
     </bean>
     </beans>
     ```
-10. As spring boot defaults the logging level in tests to DEBUG (which is verbose), you can create a logging configuration at `src/test/resources` with the name `logback-test.xml`. In this example we configure some levels to be more silent and concentrate on the output of the camunda engine:
-   ```xml
-    <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-        <encoder>
-        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
-    <root level="debug">
-        <appender-ref ref="STDOUT" />
-    </root>
-
-    <logger name="org.apache.ibatis" level="info" />
-    <logger name="javax.activation" level="info" />
-    <logger name="org.springframework" level="info" />
-
-    <logger name="org.camunda" level="info" />
-    <logger name="org.camunda.bpm.engine.test" level="debug" />
-    </configuration>
-   ```
-11. Run the JUnit test. Everything should work.
+11. Run the test. It should succeed.
