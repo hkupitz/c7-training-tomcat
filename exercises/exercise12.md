@@ -94,19 +94,16 @@ logging:
 ### External Task worker
 9. Add a bean for the external task worker in a seperate class that listens to the `creditDeduction` topic. 
 ```java
-@SpringBootApplication
-public class ExternalTaskWorkerApplication {
-
-  @Component
-  @ExternalTaskSubscription("creditDeduction")
-  public ExternalTaskHandler getDeductCustomerCreditWorker() {
-    return (ExternalTaskHandler) (externalTask, externalTaskService) -> {
-      logger.info("External task invoked: " + externalTask.getId());
-
-      externalTaskService.complete(externalTask);
-    };
-  }
+@Component
+@ExternalTaskSubscription("creditDeduction")
+public class CreditDeductionWorker implements ExternalTaskHandler {
+    @Override
+    public void execute(ExternalTask externalTask, ExternalTaskService externalTaskService) {
+        System.out.println("In external task handler: " + externalTask.getId());
+        externalTaskService.complete(externalTask);
+    }
 }
+
 ```
 10. Start your process application.
 11. Start your external task worker application.
