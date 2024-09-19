@@ -51,7 +51,7 @@ Add implementations for an external task worker.
   </dependency>
 </dependencies>
 ```
-7. Set the following `<properties>:
+7. Set the following `<properties>`:
 ```xml
 <springBoot.version>2.6.4</springBoot.version>
 <camunda.version>7.19.15-ee</camunda.version>
