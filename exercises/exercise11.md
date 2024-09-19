@@ -1,32 +1,17 @@
-# Add a Decision Table About Discount
+# Simulate an External Task Worker
 
 ## Goal
 
-Add a Business Rule Task to the order process and calculate a discount to the order based on the amount.
+Change your payment process model to use an external task worker for the credit deduction. Then simulate its execution by using the REST API.
 
 ## Detailed steps
-### Decision Modeling
-1. Open the Modeler and create a new DMN diagram.
-2. Name the decision table **Order discount** and set the Id of the decision table to **orderDiscount**.
-3. Enter the decision table and name the input column to **Order amount**. Set the input expression to **orderTotal**. Select **double** as type to match your amount variable type.
-4. Label the output column as Discount percentage and name the output as **discount**. Set the type to **integer**.
-5. Add some rules to discount some orders. An example which include less than, greater or equal to, along with ranges is shown below. Use Unique for the Hit Policy. Unique Hit Policy should only satisfy one row.
-![image](https://user-images.githubusercontent.com/5269168/195629261-549a3e16-dc5e-4555-b444-5177ad432a30.png)
-7. Save the decision table to your src/main/resources folder.
-
 ### Process Modeling
-9. Open the order process in the Modeler.
-10. Add a task to the order process to get the discount for the order amount before the payment invocation. Name the task **Get discount**. Change the task type to Business Rule Task.
-11. In the Implementation section of the property panel select DMN as Type. Add the Id of the decision table **orderDiscount** as Decision reference. Fill the Result variable with discount. Select **singleEntry** as value for Map decision result.
-12. Add a task between the Get discount and Invoke payment tasks to apply the discount to the order amount. Name the task **Apply discount**.
-13. Change the task type to Script Task. Open the Script section. Enter **javascript** as Format (the script language). Select Inline script as Type. Enter the Script
-```javascript
-orderTotal - (orderTotal * discount / 100)
-```
-14. Name the Result variable **discountedAmount**.
-15. To pay only the discounted amount, map the order total that is passed to the payment process with an Input mapping on the **Invoke payment** task. In the **paymentRequest** implementation, the local variable is preferred over the process variable. Select the Invoke payment task.
-16. Enter the Input section. Click on the + to add an input mapping. Enter **orderTotal** as the Local variable name. Select String or Expression as the Assignment type. Enter **${discountedAmount}** as the Value with the expression to access the result from the decision evaluation.
+1. In the payment process, select the task `Deduct credit`.
+2. Change the implementation type to **External**.
+3. Enter the topic `creditDeduction`.
 
-### Acceptance Test
-17. Start a process instance.
-18. Enter Cockpit and check the history of the order and the payment process. Is the discount applied correctly?
+### Simulation of External Task Worker
+4. Take a look at the [documentation](https://docs.camunda.org/rest/camunda-bpm-platform/7.21/#tag/Process-Definition) to find out how to start a process instance via the Camunda 7 REST API. 
+5. Start a process instance of the order process via the REST API. You can use a REST client of your liking, such as Postman, [Bruno](https://github.com/usebruno/bruno/releases/download/v1.29.1/bruno_1.29.1_x64_win.zip) or even `curl`. If you want you can import the OpenAPI specification in Bruno or Postman from this URL: https://start.camunda.com/openapi.json
+4. Check the documentation of the `External Task` endpoint: https://docs.camunda.org/rest/camunda-bpm-platform/7.21/#tag/External-Task
+5. *Fetch & lock* and then *Complete* the external task in your payment process instance using the respective REST requests. Make sure that the complete process chain (Order + Payment) runs through successfully end-to-end.
